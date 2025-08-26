@@ -27,6 +27,8 @@ export const LocationComponent = () => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp
         });
+        setData([...data, position.timestamp]);
+
         setError(null);
         setLoading(false);
       },
@@ -66,7 +68,6 @@ export const LocationComponent = () => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp
         });
-        setData([...data, position.timestamp]);
         setLoading(false);
       },
       (error) => {
