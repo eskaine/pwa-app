@@ -4,51 +4,63 @@ export const LocationComponent = () => {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [watching, setWatching] = useState(false);
+  const [watching, setWatching] = useState(true);
   const [data, setData] = useState([]);
 
 
+  // useEffect(() => {
+  //   let watchId;
+
+  //   if (!navigator.geolocation) {
+  //     setError('Geolocation is not supported by this browser');
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   setWatching(true);
+
+  //   watchId = navigator.geolocation.watchPosition(
+  //     (position) => {
+  //       setLocation({
+  //         latitude: position.coords.latitude,
+  //         longitude: position.coords.longitude,
+  //         accuracy: position.coords.accuracy,
+  //         timestamp: position.timestamp
+  //       });
+
+
+  //       console.log("position", data)
+  //       console.log("position2", position.timestamp)
+  //       setData([...data, position.timestamp]);
+
+  //       setError(null);
+  //       setLoading(false);
+  //     },
+  //     (error) => {
+  //       setError(error.message);
+  //       setLoading(false);
+  //     },
+  //     {
+  //       enableHighAccuracy: true,
+  //       timeout: 10000,
+  //       maximumAge: 60000
+  //     }
+  //   );
+
+  //   return () => {
+  //     if (watchId) {
+  //       navigator.geolocation.clearWatch(watchId);
+  //       setWatching(false);
+  //     }
+  //   };
+  // }, []);
+
   useEffect(() => {
-    let watchId;
+     setInterval(() => {
+      getCurrentLocation();
+    }, 10000);
 
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by this browser');
-      return;
-    }
-
-    setLoading(true);
-    setWatching(true);
-
-    watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: position.timestamp
-        });
-        setData([...data, position.timestamp]);
-
-        setError(null);
-        setLoading(false);
-      },
-      (error) => {
-        setError(error.message);
-        setLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
-    );
-
-    return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-        setWatching(false);
-      }
-    };
+    // return () => clearInterval(intervalId);
   }, []);
 
   const getCurrentLocation = () => {
@@ -68,6 +80,11 @@ export const LocationComponent = () => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp
         });
+           console.log("position", data)
+        console.log("position2", position.timestamp)
+        const timeString = new Date(position.timestamp).toLocaleTimeString();
+        setData(prevData => [...prevData, timeString]);
+
         setLoading(false);
       },
       (error) => {
