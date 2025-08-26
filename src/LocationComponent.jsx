@@ -5,6 +5,8 @@ export const LocationComponent = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [watching, setWatching] = useState(false);
+  const [data, setData] = useState([]);
+
 
   useEffect(() => {
     let watchId;
@@ -64,6 +66,7 @@ export const LocationComponent = () => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp
         });
+        setData([...data, position.timestamp]);
         setLoading(false);
       },
       (error) => {
@@ -90,16 +93,23 @@ export const LocationComponent = () => {
         {loading ? 'Getting Location...' : 'Refresh Location'}
       </button>
       
-      {location && (
+      {/* {location && (
         <div>
           <p>Latitude: {location.latitude}</p>
           <p>Longitude: {location.longitude}</p>
           <p>Accuracy: {location.accuracy} meters</p>
           <p>Last updated: {new Date(location.timestamp).toLocaleTimeString()}</p>
         </div>
-      )}
+      )} */}
+
+       <div>
+        {data.map(d => {
+            return <div>timestamp: {d}</div>
+        })}
+      </div>
       
       {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      
     </div>
   );
 };
