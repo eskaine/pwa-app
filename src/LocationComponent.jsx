@@ -90,9 +90,9 @@ export const LocationComponent = () => {
         </span>
       </div>
       
-      <button onClick={getCurrentLocation} disabled={loading}>
+      {/* <button onClick={getCurrentLocation} disabled={loading}>
         {loading ? 'Getting Location...' : 'Refresh Location'}
-      </button>
+      </button> */}
       
       {/* {location && (
         <div>
