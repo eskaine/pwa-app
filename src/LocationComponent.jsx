@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { mockAPI, startBackgroundNotifications } from './mockApi';
 
 export const LocationComponent = () => {
   const [location, setLocation] = useState(null);
@@ -6,6 +7,8 @@ export const LocationComponent = () => {
   const [loading, setLoading] = useState(false);
   const [watching, setWatching] = useState(true);
   const [data, setData] = useState([]);
+  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+  const [notificationHistory, setNotificationHistory] = useState([]);
 
 
   // useEffect(() => {
@@ -56,12 +59,72 @@ export const LocationComponent = () => {
   // }, []);
 
   useEffect(() => {
-     setInterval(() => {
+    requestNotificationPermission();
+    startBackgroundNotifications();
+    
+    // Subscribe to mock API notifications
+    const unsubscribe = mockAPI.subscribe((notification) => {
+      setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
+      triggerServiceWorkerNotification(notification);
+    });
+    
+    const intervalId = setInterval(() => {
       getCurrentLocation();
     }, 10000);
 
-    // return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      unsubscribe();
+    };
   }, []);
+
+  const triggerServiceWorkerNotification = (notification) => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        // Send message to service worker to show notification
+        registration.active?.postMessage({
+          type: 'TRIGGER_NOTIFICATION',
+          payload: {
+            title: notification.title,
+            body: notification.body,
+            data: notification.data
+          }
+        });
+      });
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && navigator.serviceWorker) {
+      try {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
+        
+        if (permission === 'granted') {
+          // Register service worker for background notifications
+          const registration = await navigator.serviceWorker.ready;
+          console.log('Service Worker registered for notifications');
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+      }
+    }
+  };
+
+  const sendLocationNotification = (location) => {
+    if (notificationPermission === 'granted' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification('Location Update', {
+          body: `New location: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`,
+          icon: '/vite.svg',
+          badge: '/vite.svg',
+          tag: 'location-update',
+          requireInteraction: false,
+          silent: false
+        });
+      });
+    }
+  };
 
   const getCurrentLocation = () => {
     setLoading(true);
@@ -80,10 +143,19 @@ export const LocationComponent = () => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp
         });
-           console.log("position", data)
+        console.log("position", data)
         console.log("position2", position.timestamp)
         const timeString = new Date(position.timestamp).toLocaleTimeString();
         setData(prevData => [...prevData, timeString]);
+        
+        // Send notification via mock API and service worker
+        mockAPI.triggerPushNotification({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        
+        // Also check for location-based alerts
+        mockAPI.checkLocationAlerts(position.coords.latitude, position.coords.longitude);
 
         setLoading(false);
       },
@@ -99,12 +171,35 @@ export const LocationComponent = () => {
     );
   };
 
+  const testNotification = async () => {
+    await mockAPI.sendNotification({
+      title: 'Test Notification',
+      body: 'This is a test notification from the PWA!',
+      type: 'test',
+      data: { test: true, timestamp: Date.now() }
+    });
+  };
+
   return (
     <div>
       <div style={{marginBottom: '10px'}}>
         <span style={{color: watching ? 'green' : 'orange'}}>
           {watching ? '📍 Location tracking active' : '⏸️ Location tracking paused'}
         </span>
+      </div>
+
+      <div style={{marginBottom: '10px'}}>
+        <span style={{color: notificationPermission === 'granted' ? 'green' : 'red'}}>
+          🔔 Notifications: {notificationPermission}
+        </span>
+        {notificationPermission === 'granted' && (
+          <button 
+            onClick={testNotification} 
+            style={{marginLeft: '10px', padding: '5px 10px'}}
+          >
+            Test Notification
+          </button>
+        )}
       </div>
       
       {/* <button onClick={getCurrentLocation} disabled={loading}>
@@ -121,10 +216,31 @@ export const LocationComponent = () => {
       )} */}
 
        <div>
-        {data.map(d => {
-            return <div>timestamp: {d}</div>
+        <h3>Location Updates:</h3>
+        {data.map((d, index) => {
+            return <div key={index}>timestamp: {d}</div>
         })}
       </div>
+
+      {notificationHistory.length > 0 && (
+        <div style={{marginTop: '20px', border: '1px solid #ccc', padding: '10px', borderRadius: '5px'}}>
+          <h3>Notification History:</h3>
+          {notificationHistory.map((notification, index) => (
+            <div key={notification.id || index} style={{
+              marginBottom: '10px', 
+              padding: '8px', 
+              backgroundColor: '#f5f5f5',
+              borderRadius: '3px'
+            }}>
+              <strong>{notification.title}</strong>
+              <p>{notification.body}</p>
+              <small style={{color: '#666'}}>
+                {notification.type} - {new Date(notification.timestamp).toLocaleTimeString()}
+              </small>
+            </div>
+          ))}
+        </div>
+      )}
       
       {error && <p style={{color: 'red'}}>Error: {error}</p>}
       
