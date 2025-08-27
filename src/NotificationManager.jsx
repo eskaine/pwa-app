@@ -21,38 +21,22 @@ const NotificationManager = () => {
       if (permission === 'granted') {
         console.log('Permission granted, requesting FCM token...');
         
-        // Try to get token without service worker first
+        // Let Firebase handle service worker registration automatically
         try {
+          console.log('Getting FCM token with Firebase auto-registration...');
           const fcmToken = await getToken(messaging, {
-            vapidKey: 'BHIu2q_7NueR77sDsPFTNeSWGXnFsxSpOKAs_9ne6Sz6gKemZY4Up16kWFXaISPqL_VayLv7N-UpWbCaqbLqrVA'
+            vapidKey: 'BJm1LxKY-pocd7qwIhPGiCFMpsAk77O8L32giL2ntAG6G41IOGpBRGk--JxNfw8QloaXBaYbfMxCqqNhZxVWAOI'
           });
           
           console.log('FCM Token result:', fcmToken);
           if (fcmToken) {
-            console.log('FCM Token:', fcmToken);
+            console.log('SUCCESS! FCM Token:', fcmToken);
             setToken(fcmToken);
           } else {
             console.log('No FCM token received');
           }
-        } catch (tokenError) {
-          console.log('Failed to get token without SW, trying with SW registration:', tokenError);
-          
-          // If that fails, try with service worker registration
-          if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log('Firebase SW registered:', registration);
-            
-            const fcmToken = await getToken(messaging, {
-              vapidKey: 'BHIu2q_7NueR77sDsPFTNeSWGXnFsxSpOKAs_9ne6Sz6gKemZY4Up16kWFXaISPqL_VayLv7N-UpWbCaqbLqrVA',
-              serviceWorkerRegistration: registration
-            });
-            
-            console.log('FCM Token with SW:', fcmToken);
-            if (fcmToken) {
-              console.log('FCM Token:', fcmToken);
-              setToken(fcmToken);
-            }
-          }
+        } catch (fcmError) {
+          console.error('FCM token error:', fcmError);
         }
       }
     } catch (error) {
