@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { LocationComponent } from './LocationComponent'
 import { InstallButton } from './InstallButton'
+import NotificationManager from './NotificationManager'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -28,6 +29,7 @@ function App() {
         </p>
       </div> */}
       <InstallButton />
+      <NotificationManager />
       <LocationComponent />
     </>
   )
