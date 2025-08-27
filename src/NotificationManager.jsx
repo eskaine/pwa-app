@@ -48,28 +48,28 @@ const NotificationManager = () => {
   };
 
   return (
-    &lt;div style={{ padding: '20px', border: '1px solid #ccc', margin: '20px 0' }}&gt;
-      &lt;h3&gt;Firebase Cloud Messaging&lt;/h3&gt;
-      &lt;p&gt;Permission: {permission}&lt;/p&gt;
+    <div style={{ padding: '20px', border: '1px solid #ccc', margin: '20px 0' }}>
+      <h3>Firebase Cloud Messaging</h3>
+      <p>Permission: {permission}</p>
       
       {permission !== 'granted' && (
-        &lt;button onClick={requestPermission}&gt;
+        <button onClick={requestPermission}>
           Enable Notifications
-        &lt;/button&gt;
+        </button>
       )}
       
       {token && (
-        &lt;div&gt;
-          &lt;p&gt;FCM Token (copy this for testing):&lt;/p&gt;
-          &lt;textarea 
+        <div>
+          <p>FCM Token (copy this for testing):</p>
+          <textarea 
             value={token} 
             readOnly 
             style={{ width: '100%', height: '100px' }}
-          /&gt;
-          &lt;button onClick={copyToken}&gt;Copy Token&lt;/button&gt;
-        &lt;/div&gt;
+          />
+          <button onClick={copyToken}>Copy Token</button>
+        </div>
       )}
-    &lt;/div&gt;
+    </div>
   );
 };
 
