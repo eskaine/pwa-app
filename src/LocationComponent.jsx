@@ -61,10 +61,9 @@ export const LocationComponent = () => {
 
   useEffect(() => {
     requestNotificationPermission();
-    startBackgroundNotifications();
     registerNotificationHandlers();
     
-    // Subscribe to mock API notifications
+    // Subscribe to mock API notifications (only when app is active)
     const unsubscribe = mockAPI.subscribe((notification) => {
       setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
       showServiceWorkerNotification(notification.title, notification.body, notification.data);
@@ -73,6 +72,22 @@ export const LocationComponent = () => {
     const intervalId = setInterval(() => {
       getCurrentLocation();
     }, 10000);
+
+    // Start background sync in service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.active?.postMessage({
+          type: 'START_BACKGROUND_SYNC'
+        });
+        
+        // Register background sync
+        if ('sync' in registration) {
+          registration.sync.register('location-sync').catch(err => {
+            console.log('Background sync registration failed:', err);
+          });
+        }
+      });
+    }
 
     return () => {
       clearInterval(intervalId);
@@ -134,14 +149,16 @@ export const LocationComponent = () => {
         const timeString = new Date(position.timestamp).toLocaleTimeString();
         setData(prevData => [...prevData, timeString]);
         
-        // Send notification via mock API and service worker
-        mockAPI.triggerPushNotification({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        
-        // Also check for location-based alerts
-        mockAPI.checkLocationAlerts(position.coords.latitude, position.coords.longitude);
+        // Send notification only when app is active
+        if (document.visibilityState === 'visible') {
+          mockAPI.triggerPushNotification({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          
+          // Also check for location-based alerts
+          mockAPI.checkLocationAlerts(position.coords.latitude, position.coords.longitude);
+        }
 
         setLoading(false);
       },

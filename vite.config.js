@@ -7,20 +7,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\./,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-            }
-          }
-        ]
+      srcDir: 'public',
+      filename: 'sw.js',
+      strategies: 'injectManifest',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
       devOptions: {
-        enabled: true
+        enabled: true,
+        type: 'module'
       },
       manifest: {
         name: 'My PWA App',
