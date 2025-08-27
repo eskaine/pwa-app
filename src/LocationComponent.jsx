@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { mockAPI, startBackgroundNotifications } from './mockApi';
+import { registerNotificationHandlers, showServiceWorkerNotification } from './notificationWorker';
 
 export const LocationComponent = () => {
   const [location, setLocation] = useState(null);
@@ -61,11 +62,12 @@ export const LocationComponent = () => {
   useEffect(() => {
     requestNotificationPermission();
     startBackgroundNotifications();
+    registerNotificationHandlers();
     
     // Subscribe to mock API notifications
     const unsubscribe = mockAPI.subscribe((notification) => {
       setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
-      triggerServiceWorkerNotification(notification);
+      showServiceWorkerNotification(notification.title, notification.body, notification.data);
     });
     
     const intervalId = setInterval(() => {
@@ -77,22 +79,6 @@ export const LocationComponent = () => {
       unsubscribe();
     };
   }, []);
-
-  const triggerServiceWorkerNotification = (notification) => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        // Send message to service worker to show notification
-        registration.active?.postMessage({
-          type: 'TRIGGER_NOTIFICATION',
-          payload: {
-            title: notification.title,
-            body: notification.body,
-            data: notification.data
-          }
-        });
-      });
-    }
-  };
 
   const requestNotificationPermission = async () => {
     if ('Notification' in window && navigator.serviceWorker) {
