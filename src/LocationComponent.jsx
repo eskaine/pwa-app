@@ -218,9 +218,9 @@ export const LocationComponent = () => {
               backgroundColor: '#f5f5f5',
               borderRadius: '3px'
             }}>
-              <strong>{notification.title}</strong>
-              <p>{notification.body}</p>
-              <small style={{color: '#666'}}>
+              <strong style={{color: 'black'}}>{notification.title}</strong>
+              <p style={{color: 'black'}}>{notification.body}</p>
+              <small style={{color: 'black'}}>
                 {notification.type} - {new Date(notification.timestamp).toLocaleTimeString()}
               </small>
             </div>
