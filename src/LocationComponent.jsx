@@ -63,6 +63,18 @@ export const LocationComponent = () => {
     requestNotificationPermission();
     registerNotificationHandlers();
     
+    // Listen for messages from service worker
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data && event.data.type === 'NOTIFICATION_SENT') {
+        const notification = event.data.notification;
+        setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]);
+      }
+    };
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+    
     // Subscribe to mock API notifications (only when app is active)
     const unsubscribe = mockAPI.subscribe((notification) => {
       setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
@@ -92,6 +104,9 @@ export const LocationComponent = () => {
     return () => {
       clearInterval(intervalId);
       unsubscribe();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
     };
   }, []);
 
@@ -183,6 +198,16 @@ export const LocationComponent = () => {
     });
   };
 
+  const startBackgroundTimer = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.active?.postMessage({
+          type: 'START_BACKGROUND_SYNC'
+        });
+      });
+    }
+  };
+
   return (
     <div>
       <div style={{marginBottom: '10px'}}>
@@ -196,12 +221,20 @@ export const LocationComponent = () => {
           🔔 Notifications: {notificationPermission}
         </span>
         {notificationPermission === 'granted' && (
-          <button 
-            onClick={testNotification} 
-            style={{marginLeft: '10px', padding: '5px 10px'}}
-          >
-            Test Notification
-          </button>
+          <>
+            <button 
+              onClick={testNotification} 
+              style={{marginLeft: '10px', padding: '5px 10px'}}
+            >
+              Test Notification
+            </button>
+            <button 
+              onClick={startBackgroundTimer} 
+              style={{marginLeft: '10px', padding: '5px 10px'}}
+            >
+              Start Background Timer
+            </button>
+          </>
         )}
       </div>
       

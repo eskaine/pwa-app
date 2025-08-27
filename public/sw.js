@@ -7,10 +7,9 @@ cleanupOutdatedCaches();
 // Background notification timer
 let backgroundTimer = null;
 
-// Start background notifications when SW activates
+// Start background notifications when SW activates  
 self.addEventListener('activate', event => {
   console.log('SW activated - starting background notifications');
-  startBackgroundNotifications();
   event.waitUntil(clients.claim());
 });
 
@@ -19,40 +18,74 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
+// Simulate push notifications (works when tab is minimized but browser open)
 function startBackgroundNotifications() {
+  console.log('Starting background notification simulation');
+  
   // Clear existing timer
   if (backgroundTimer) {
     clearInterval(backgroundTimer);
   }
   
-  // Start background notification timer
+  // This works when:
+  // - Tab is minimized but browser is open
+  // - Tab is in background but browser is open
+  // Does NOT work when:
+  // - Browser is completely closed
+  // - System puts browser to sleep
   backgroundTimer = setInterval(async () => {
-    console.log('Background notification timer fired');
+    console.log('Background timer fired');
     
-    // Check if any clients are focused (app in foreground)
-    const clients = await self.clients.matchAll({ 
-      type: 'window',
-      includeUncontrolled: true 
-    });
-    
-    const hasVisibleClient = clients.some(client => client.visibilityState === 'visible');
-    
-    // Only show background notifications when app is not visible
-    if (!hasVisibleClient) {
-      console.log('App is in background - showing notification');
+    try {
+      const clientList = await self.clients.matchAll({ 
+        type: 'window',
+        includeUncontrolled: true 
+      });
       
-      // Random chance to show notification (30%)
-      if (Math.random() < 0.3) {
-        await showBackgroundNotification({
-          title: 'Background Location Update',
-          body: `Location tracked in background at ${new Date().toLocaleTimeString()}`,
-          tag: 'background-location'
+      const hasVisibleClient = clientList.some(client => 
+        client.visibilityState === 'visible' && client.focused
+      );
+      
+      // Show notification when app is not actively focused
+      if (!hasVisibleClient && clientList.length > 0) {
+        console.log('App backgrounded - showing notification');
+        
+        const notification = {
+          title: '🔔 Background Alert',
+          body: `Notification at ${new Date().toLocaleTimeString()} (tab minimized)`,
+          tag: 'background-demo'
+        };
+        
+        await showBackgroundNotification(notification);
+        
+        // Send to main app for history tracking
+        clientList.forEach(client => {
+          client.postMessage({
+            type: 'NOTIFICATION_SENT',
+            notification: {
+              id: Date.now(),
+              title: notification.title,
+              body: notification.body,
+              timestamp: new Date().toISOString(),
+              type: 'background-alert'
+            }
+          });
         });
+      } else if (clientList.length === 0) {
+        console.log('No clients - browser may be closed');
+        // This rarely works due to browser limitations
+        const notification = {
+          title: '📱 PWA Notification', 
+          body: `Background notification - browser closed`,
+          tag: 'closed-demo'
+        };
+        
+        await showBackgroundNotification(notification);
       }
-    } else {
-      console.log('App is in foreground - skipping background notification');
+    } catch (error) {
+      console.error('Background notification error:', error);
     }
-  }, 10000); // Every 10 seconds
+  }, 10000);
 }
 
 async function showBackgroundNotification(options) {
