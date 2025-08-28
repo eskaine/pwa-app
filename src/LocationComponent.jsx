@@ -9,8 +9,8 @@ export const LocationComponent = () => {
   const [watching, setWatching] = useState(true);
   const [data, setData] = useState([]);
   const [notificationPermission, setNotificationPermission] = useState(
-    typeof window !== 'undefined' && 'Notification' in window 
-      ? Notification.permission 
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
       : 'not-supported'
   );
   const [notificationHistory, setNotificationHistory] = useState([]);
@@ -66,7 +66,7 @@ export const LocationComponent = () => {
   useEffect(() => {
     requestNotificationPermission();
     registerNotificationHandlers();
-    
+
     // Listen for messages from service worker
     const handleServiceWorkerMessage = (event) => {
       if (event.data && event.data.type === 'NOTIFICATION_SENT') {
@@ -74,20 +74,20 @@ export const LocationComponent = () => {
         setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]);
       }
     };
-    
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
     }
-    
+
     // Subscribe to mock API notifications (only when app is active)
     const unsubscribe = mockAPI.subscribe((notification) => {
       setNotificationHistory(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
       showServiceWorkerNotification(notification.title, notification.body, notification.data);
     });
-    
-    const intervalId = setInterval(() => {
-      getCurrentLocation();
-    }, 10000);
+
+    // const intervalId = setInterval(() => {
+    //   getCurrentLocation();
+    // }, 10000);
 
     // Start background sync in service worker
     if ('serviceWorker' in navigator) {
@@ -95,7 +95,7 @@ export const LocationComponent = () => {
         registration.active?.postMessage({
           type: 'START_BACKGROUND_SYNC'
         });
-        
+
         // Register background sync
         if ('sync' in registration) {
           registration.sync.register('location-sync').catch(err => {
@@ -119,7 +119,7 @@ export const LocationComponent = () => {
       try {
         const permission = await Notification.requestPermission();
         setNotificationPermission(permission);
-        
+
         if (permission === 'granted') {
           // Register service worker for background notifications
           const registration = await navigator.serviceWorker.ready;
@@ -148,7 +148,7 @@ export const LocationComponent = () => {
 
   const getCurrentLocation = () => {
     setLoading(true);
-    
+
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by this browser');
       setLoading(false);
@@ -167,14 +167,14 @@ export const LocationComponent = () => {
         console.log("position2", position.timestamp)
         const timeString = new Date(position.timestamp).toLocaleTimeString();
         setData(prevData => [...prevData, timeString]);
-        
+
         // Send notification only when app is active
         if (document.visibilityState === 'visible') {
           mockAPI.triggerPushNotification({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
-          
+
           // Also check for location-based alerts
           mockAPI.checkLocationAlerts(position.coords.latitude, position.coords.longitude);
         }
@@ -214,46 +214,47 @@ export const LocationComponent = () => {
 
   return (
     <div>
-      <div style={{marginBottom: '10px'}}>
-        <span style={{color: watching ? 'green' : 'orange'}}>
+      <div style={{ marginBottom: '10px' }}>
+        <span style={{ color: watching ? 'green' : 'orange' }}>
           {watching ? '📍 Location tracking active' : '⏸️ Location tracking paused'}
         </span>
       </div>
 
-      <div style={{marginBottom: '10px'}}>
-        <span style={{color: 
-          notificationPermission === 'not-supported' ? 'gray' :
-          notificationPermission === 'granted' ? 'green' : 'red'
+      <div style={{ marginBottom: '10px' }}>
+        <span style={{
+          color:
+            notificationPermission === 'not-supported' ? 'gray' :
+              notificationPermission === 'granted' ? 'green' : 'red'
         }}>
           🔔 Notifications: {notificationPermission}
         </span>
         {notificationPermission === 'granted' && (
           <>
-            <button 
-              onClick={testNotification} 
-              style={{marginLeft: '10px', padding: '5px 10px'}}
+            <button
+              onClick={testNotification}
+              style={{ marginLeft: '10px', padding: '5px 10px' }}
             >
               Test Notification
             </button>
-            <button 
-              onClick={startBackgroundTimer} 
-              style={{marginLeft: '10px', padding: '5px 10px'}}
+            <button
+              onClick={startBackgroundTimer}
+              style={{ marginLeft: '10px', padding: '5px 10px' }}
             >
               Start Background Timer
             </button>
           </>
         )}
         {notificationPermission === 'not-supported' && (
-          <span style={{marginLeft: '10px', color: 'gray', fontSize: '0.9em'}}>
+          <span style={{ marginLeft: '10px', color: 'gray', fontSize: '0.9em' }}>
             (Not supported in this browser)
           </span>
         )}
       </div>
-      
+
       {/* <button onClick={getCurrentLocation} disabled={loading}>
         {loading ? 'Getting Location...' : 'Refresh Location'}
       </button> */}
-      
+
       {/* {location && (
         <div>
           <p>Latitude: {location.latitude}</p>
@@ -263,35 +264,35 @@ export const LocationComponent = () => {
         </div>
       )} */}
 
-       <div>
+      <div>
         <h3>Location Updates:</h3>
         {data.map((d, index) => {
-            return <div key={index}>timestamp: {d}</div>
+          return <div key={index}>timestamp: {d}</div>
         })}
       </div>
 
       {notificationHistory.length > 0 && (
-        <div style={{marginTop: '20px', border: '1px solid #ccc', padding: '10px', borderRadius: '5px'}}>
+        <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}>
           <h3>Notification History:</h3>
           {notificationHistory.map((notification, index) => (
             <div key={notification.id || index} style={{
-              marginBottom: '10px', 
-              padding: '8px', 
+              marginBottom: '10px',
+              padding: '8px',
               backgroundColor: '#f5f5f5',
               borderRadius: '3px'
             }}>
-              <strong style={{color: 'black'}}>{notification.title}</strong>
-              <p style={{color: 'black'}}>{notification.body}</p>
-              <small style={{color: 'black'}}>
+              <strong style={{ color: 'black' }}>{notification.title}</strong>
+              <p style={{ color: 'black' }}>{notification.body}</p>
+              <small style={{ color: 'black' }}>
                 {notification.type} - {new Date(notification.timestamp).toLocaleTimeString()}
               </small>
             </div>
           ))}
         </div>
       )}
-      
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
-      
+
+      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+
     </div>
   );
 };
