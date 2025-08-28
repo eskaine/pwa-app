@@ -1,16 +1,42 @@
 import { useEffect, useState } from 'react';
-import { messaging, getToken, onMessage } from './firebase';
+import { messaging, getToken, onMessage, isMessagingSupported } from './firebase';
 
 const NotificationManager = () => {
   const [token, setToken] = useState('');
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window 
+      ? Notification.permission 
+      : 'not-supported'
+  );
+  const [isSupported, setIsSupported] = useState(false);
+  const [notificationSupported, setNotificationSupported] = useState(false);
 
   useEffect(() => {
-    requestPermission();
-    setupMessageListener();
+    // Check if Notification API is available
+    const notifSupported = typeof window !== 'undefined' && 'Notification' in window;
+    setNotificationSupported(notifSupported);
+    
+    const supported = isMessagingSupported();
+    setIsSupported(supported);
+    
+    if (notifSupported) {
+      setPermission(Notification.permission);
+    }
+    
+    if (supported && messaging && notifSupported) {
+      requestPermission();
+      setupMessageListener();
+    } else {
+      console.log('Firebase Cloud Messaging or Notifications not supported on this device/browser');
+    }
   }, []);
 
   const requestPermission = async () => {
+    if (!isSupported || !messaging || !notificationSupported) {
+      console.log('Skipping FCM token request - not supported on this browser');
+      return;
+    }
+
     try {
       console.log('Requesting notification permission...');
       
@@ -45,10 +71,14 @@ const NotificationManager = () => {
   };
 
   const setupMessageListener = () => {
+    if (!isSupported || !messaging) {
+      return;
+    }
+
     onMessage(messaging, (payload) => {
       console.log('FCM foreground message:', payload);
       
-      if (Notification.permission === 'granted') {
+      if (notificationSupported && Notification.permission === 'granted') {
         new Notification(payload.notification.title, {
           body: payload.notification.body,
           icon: payload.notification.icon || '/vite.svg'
@@ -64,32 +94,48 @@ const NotificationManager = () => {
   return (
     <div style={{ padding: '20px', border: '1px solid #ccc', margin: '20px 0' }}>
       <h3>Firebase Cloud Messaging</h3>
-      <p>Permission: {permission}</p>
-      <p>Token length: {token.length}</p>
-      <p>Has token: {token ? 'Yes' : 'No'}</p>
       
-      {permission !== 'granted' && (
-        <button onClick={requestPermission}>
-          Enable Notifications
-        </button>
-      )}
-      
-      {permission === 'granted' && !token && (
-        <button onClick={requestPermission}>
-          Get FCM Token
-        </button>
-      )}
-      
-      {token && (
+      {!notificationSupported ? (
         <div>
-          <p>FCM Token (copy this for testing):</p>
-          <textarea 
-            value={token} 
-            readOnly 
-            style={{ width: '100%', height: '100px' }}
-          />
-          <button onClick={copyToken}>Copy Token</button>
+          <p style={{ color: 'red' }}>❌ Notifications not supported on this browser</p>
+          <p>This browser doesn't support the Notification API.</p>
         </div>
+      ) : !isSupported ? (
+        <div>
+          <p style={{ color: 'orange' }}>⚠️ FCM not supported on this browser (likely iOS Safari)</p>
+          <p>FCM requires service workers, which are limited on iOS Safari.</p>
+          <p>Basic notifications may still work through the Notifications API.</p>
+        </div>
+      ) : (
+        <>
+          <p>Permission: {permission}</p>
+          <p>Token length: {token.length}</p>
+          <p>Has token: {token ? 'Yes' : 'No'}</p>
+          
+          {permission !== 'granted' && (
+            <button onClick={requestPermission}>
+              Enable Notifications
+            </button>
+          )}
+          
+          {permission === 'granted' && !token && (
+            <button onClick={requestPermission}>
+              Get FCM Token
+            </button>
+          )}
+          
+          {token && (
+            <div>
+              <p>FCM Token (copy this for testing):</p>
+              <textarea 
+                value={token} 
+                readOnly 
+                style={{ width: '100%', height: '100px' }}
+              />
+              <button onClick={copyToken}>Copy Token</button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

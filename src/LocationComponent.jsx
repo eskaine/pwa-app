@@ -8,7 +8,11 @@ export const LocationComponent = () => {
   const [loading, setLoading] = useState(false);
   const [watching, setWatching] = useState(true);
   const [data, setData] = useState([]);
-  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+  const [notificationPermission, setNotificationPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window 
+      ? Notification.permission 
+      : 'not-supported'
+  );
   const [notificationHistory, setNotificationHistory] = useState([]);
 
 
@@ -111,7 +115,7 @@ export const LocationComponent = () => {
   }, []);
 
   const requestNotificationPermission = async () => {
-    if ('Notification' in window && navigator.serviceWorker) {
+    if (typeof window !== 'undefined' && 'Notification' in window && navigator.serviceWorker) {
       try {
         const permission = await Notification.requestPermission();
         setNotificationPermission(permission);
@@ -217,7 +221,10 @@ export const LocationComponent = () => {
       </div>
 
       <div style={{marginBottom: '10px'}}>
-        <span style={{color: notificationPermission === 'granted' ? 'green' : 'red'}}>
+        <span style={{color: 
+          notificationPermission === 'not-supported' ? 'gray' :
+          notificationPermission === 'granted' ? 'green' : 'red'
+        }}>
           🔔 Notifications: {notificationPermission}
         </span>
         {notificationPermission === 'granted' && (
@@ -235,6 +242,11 @@ export const LocationComponent = () => {
               Start Background Timer
             </button>
           </>
+        )}
+        {notificationPermission === 'not-supported' && (
+          <span style={{marginLeft: '10px', color: 'gray', fontSize: '0.9em'}}>
+            (Not supported in this browser)
+          </span>
         )}
       </div>
       
