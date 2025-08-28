@@ -3,8 +3,10 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { LocationComponent } from './LocationComponent'
-import { InstallButton } from './InstallButton'
+import { InstallButton } from './InstallButton'  
 import NotificationManager from './NotificationManager'
+import IOSNotifications from './IOSNotifications'
+import IOSNotificationAlternatives from './IOSNotificationAlternatives'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -16,6 +18,8 @@ function App() {
         <p>Fixed Firebase messaging for iOS Safari compatibility</p>
       </div>
       <NotificationManager />
+      <IOSNotifications />
+      <IOSNotificationAlternatives />
       <LocationComponent />
       <InstallButton />
     </>
