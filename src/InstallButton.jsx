@@ -3,17 +3,31 @@ import { useState, useEffect } from 'react'
 export function InstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [showInstall, setShowInstall] = useState(false)
+  const [debugInfo, setDebugInfo] = useState('Waiting for beforeinstallprompt...')
 
   useEffect(() => {
     const handler = (e) => {
+      console.log('beforeinstallprompt fired!', e)
       e.preventDefault()
       setDeferredPrompt(e)
       setShowInstall(true)
+      setDebugInfo('Install prompt available!')
     }
 
     const installedHandler = () => {
+      console.log('App installed!')
       setShowInstall(false)
       setDeferredPrompt(null)
+      setDebugInfo('App installed')
+    }
+
+    // Check if already installed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      setDebugInfo('App already installed')
+    } else if (navigator.standalone) {
+      setDebugInfo('App already installed (iOS)')
+    } else {
+      setDebugInfo('Waiting for beforeinstallprompt...')
     }
 
     window.addEventListener('beforeinstallprompt', handler)
@@ -38,24 +52,19 @@ export function InstallButton() {
     setDeferredPrompt(null)
   }
 
-  if (!showInstall) return null
-
   return (
-    <button 
-      onClick={handleInstall}
-      style={{
-        padding: '12px 24px',
-        backgroundColor: '#007bff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        margin: '20px 0'
-      }}
-    >
-      Install App
-    </button>
+    <div style={{ marginBottom: '10px' }}>
+      <span style={{ color: showInstall ? 'green' : 'orange' }}>
+        📱 PWA Install: {debugInfo}
+      </span>
+      {showInstall && (
+        <button 
+          onClick={handleInstall}
+          style={{ marginLeft: '10px', padding: '5px 10px' }}
+        >
+          Install App
+        </button>
+      )}
+    </div>
   )
 }
