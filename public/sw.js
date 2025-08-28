@@ -178,6 +178,28 @@ self.addEventListener('message', event => {
     showBackgroundNotification({ title, body, tag });
   }
   
+  if (event.data && event.data.type === 'SHOW_FCM_FOREGROUND') {
+    const { title, body, icon, data } = event.data.payload;
+    self.registration.showNotification(title, {
+      body,
+      icon: icon || '/vite.svg',
+      badge: '/vite.svg',
+      tag: 'fcm-foreground-relay',
+      requireInteraction: false,
+      data: data || {},
+      actions: [
+        {
+          action: 'open',
+          title: 'Open App'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        }
+      ]
+    });
+  }
+  
   if (event.data && event.data.type === 'START_BACKGROUND_SYNC') {
     console.log('Starting background sync from message');
     startBackgroundNotifications();

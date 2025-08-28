@@ -79,9 +79,46 @@ const NotificationManager = () => {
       console.log('FCM foreground message:', payload);
       
       if (notificationSupported && Notification.permission === 'granted') {
-        new Notification(payload.notification.title, {
-          body: payload.notification.body,
-          icon: payload.notification.icon || '/vite.svg'
+        // Send message to service worker for reliable Android notification display
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.controller?.postMessage({
+            type: 'SHOW_FCM_FOREGROUND',
+            payload: {
+              title: payload.notification.title,
+              body: payload.notification.body,
+              icon: payload.notification.icon || '/vite.svg',
+              data: payload.data || {}
+            }
+          });
+        }
+        
+        // Fallback: Use service worker registration directly
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(payload.notification.title, {
+            body: payload.notification.body,
+            icon: payload.notification.icon || '/vite.svg',
+            badge: '/vite.svg',
+            tag: 'fcm-foreground-direct',
+            requireInteraction: false,
+            data: payload.data || {},
+            actions: [
+              {
+                action: 'open',
+                title: 'Open App'
+              },
+              {
+                action: 'dismiss', 
+                title: 'Dismiss'
+              }
+            ]
+          });
+        }).catch(error => {
+          console.error('Failed to show foreground notification via service worker:', error);
+          // Final fallback to direct notification for browsers that support it
+          new Notification(payload.notification.title, {
+            body: payload.notification.body,
+            icon: payload.notification.icon || '/vite.svg'
+          });
         });
       }
     });
